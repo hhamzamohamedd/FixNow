@@ -1,0 +1,15 @@
+.idea/
+*.iml
+.vscode/
+target/
+.mvn/wrapper/maven-wrapper.jar
+.m2-local/
+data/
+spring-boot.out.log
+spring-boot.err.log
+
+# IDE/local files
+.classpath
+.project
+.settings/
+HELP-local-backup.md

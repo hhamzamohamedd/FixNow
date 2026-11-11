@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} ?: 'Customer Dashboard - FixNow'">Customer Dashboard - FixNow</title>
+    <link rel="stylesheet" th:href="@{/css/fixnow-theme.css}" href="../static/css/fixnow-theme.css">
+</head>
+<body>
+<div th:replace="~{layout/topbar-core :: topbarCore('customer')}">
+    <header class="site-topbar">
+        <a class="brand-lockup" href="#"><span class="brand-symbol">FN</span><span><strong>FixNow</strong><small>Fast home emergency services</small></span></a>
+    </header>
+</div>
+
+<main class="page-shell section-stack">
+    <p class="form-message form-message-success" aria-live="polite" th:if="${successMessage}" th:text="${successMessage}">
+        Success
+    </p>
+    <p class="form-message form-message-error" aria-live="polite" th:if="${errorMessage}" th:text="${errorMessage}">
+        Error
+    </p>
+
+    <section class="hero-panel dashboard-hero">
+        <div>
+            <p class="eyebrow">Customer home</p>
+            <h1>Welcome, <span th:text="${customerName} ?: 'Customer'">Customer</span></h1>
+            <p class="lead">Track requests, book a technician, and leave reviews after completed work.</p>
+        </div>
+        <span class="status-badge status-waiting" th:text="${activeRequestStatus} ?: 'No recent status'">Pending</span>
+    </section>
+
+    <section class="stats-row" aria-label="Request overview">
+        <article class="stat-card">
+            <span class="metric-icon">A</span>
+            <div><strong th:text="${activeRequestsCount} ?: '0'">0</strong><span>Active requests</span></div>
+        </article>
+        <article class="stat-card">
+            <span class="metric-icon">C</span>
+            <div><strong th:text="${completedRequestsCount} ?: '0'">0</strong><span>Completed</span></div>
+        </article>
+        <article class="stat-card">
+            <span class="metric-icon">R</span>
+            <div><strong th:text="${pendingReviewsCount} ?: '0'">0</strong><span>Ready to review</span></div>
+        </article>
+        <article class="stat-card">
+            <span class="metric-icon">T</span>
+            <div><strong th:text="${nearbyTechniciansCount} ?: '0'">0</strong><span>Technicians available</span></div>
+        </article>
+    </section>
+
+    <section class="grid grid-2" aria-label="Quick actions">
+        <article class="action-card">
+            <span class="service-icon is-soft">NEW</span>
+            <h2>New service request</h2>
+            <p class="card-copy">Describe the issue, location, and urgency.</p>
+            <a class="btn" th:href="@{/customer/request/new}" href="/customer/request/new">Create request</a>
+        </article>
+        <article class="action-card">
+            <span class="service-icon is-soft">REV</span>
+            <h2>Review completed work</h2>
+            <p class="card-copy" th:text="${pendingReviewsCount > 0} ? 'Rate your technician after a completed job.' : 'Completed jobs that are ready for review will appear here.'">
+                Rate your technician after a completed job.
+            </p>
+            <a class="btn-secondary"
+               th:if="${firstReviewableRequestId != null}"
+               th:href="@{/customer/review/new(requestId=${firstReviewableRequestId})}"
+               href="/customer/review/new">Add review</a>
+            <span class="btn-secondary" th:if="${firstReviewableRequestId == null}">No reviews ready</span>
+        </article>
+    </section>
+
+    <section class="activity-panel" aria-label="Your requests">
+        <p class="eyebrow">Service requests</p>
+        <h2 th:text="${activeRequestTitle} ?: 'Your requests'">Your requests</h2>
+
+        <div class="empty-state centered" th:if="${requests == null or #lists.isEmpty(requests)}">
+            <span class="service-icon is-soft">0</span>
+            <h3>No requests yet</h3>
+            <p class="muted">Create a request to see it listed here.</p>
+            <a class="btn" th:href="@{/customer/request/new}" href="/customer/request/new">Create request</a>
+        </div>
+
+        <div class="service-category-list" th:if="${requests != null and !#lists.isEmpty(requests)}">
+            <section class="service-card" th:each="req : ${requests}">
+                <span class="service-icon" th:text="${'#' + req.id}">#1</span>
+                <h3 th:text="${req.category} ?: 'Service'">Service</h3>
+                <p class="muted" th:text="${req.description} ?: 'No description'">—</p>
+                <dl class="summary-list">
+                    <div><dt>Status</dt><dd th:text="${req.status}">PENDING</dd></div>
+                    <div><dt>Urgency</dt><dd th:text="${req.urgency} ?: '—'">—</dd></div>
+                    <div><dt>Location</dt><dd th:text="${req.location} ?: '—'">—</dd></div>
+                </dl>
+                <div class="button-row">
+                    <a class="btn-secondary" th:href="@{/customer/request/{id}(id=${req.id})}" href="#">View details</a>
+                    <a class="btn"
+                       th:if="${reviewableRequestIds != null and reviewableRequestIds.contains(req.id)}"
+                       th:href="@{/customer/review/new(requestId=${req.id})}"
+                       href="/customer/review/new">Add review</a>
+                </div>
+            </section>
+        </div>
+    </section>
+</main>
+
+<div th:replace="~{layout/base-footer :: baseFooter}">
+    <footer class="site-footer"><p>FixNow Spring Boot MVC view layer.</p></footer>
+</div>
+<script th:src="@{/js/fixnow-ui.js}" src="../static/js/fixnow-ui.js"></script>
+</body>
+</html>
