@@ -7,6 +7,22 @@
     var translatableAttributes = ["placeholder", "title", "aria-label"];
     var translationsAr = {
         "Fast home emergency services": "خدمات صيانة منزلية سريعة",
+        "AI customer support": "دعم العملاء بالذكاء الاصطناعي",
+        "Customer support": "دعم العملاء",
+        "FixNow AI assistant": "مساعد FixNow الذكي",
+        "Ask about home repairs, FixNow, or the status of your requests.": "اسأل عن إصلاحات المنزل أو FixNow أو حالة طلباتك.",
+        "Hi! I’m FixNow’s AI assistant. How can I help?": "مرحبا! أنا مساعد FixNow الذكي. كيف يمكنني مساعدتك؟",
+        "Your message": "رسالتك",
+        "Ask about a repair or your service request...": "اسأل عن إصلاح أو طلب الخدمة...",
+        "AI can make mistakes. Your message and recent request IDs/statuses are sent to Google Gemini to generate replies. Don’t include passwords or payment details. For dangerous situations, contact emergency services or a qualified technician.": "قد يخطئ الذكاء الاصطناعي. تُرسل رسالتك ومعرّفات وحالات طلباتك الأخيرة إلى Google Gemini لإنشاء الردود. لا تذكر كلمات المرور أو بيانات الدفع. في الحالات الخطرة، اتصل بالطوارئ أو بفني مؤهل.",
+        "Send message": "إرسال الرسالة",
+        "Open AI assistant": "افتح مساعد الذكاء الاصطناعي",
+        "Close AI assistant": "أغلق مساعد الذكاء الاصطناعي",
+        "Close chat": "إغلاق المحادثة",
+        "The AI assistant is temporarily unavailable.": "مساعد الذكاء الاصطناعي غير متاح مؤقتا.",
+        "The AI assistant is not configured. Set GEMINI_API_KEY on the server.": "لم يتم إعداد المساعد. أضف GEMINI_API_KEY إلى إعدادات الخادم.",
+        "Chat limit reached. Wait a minute before sending another message.": "تم الوصول إلى حد المحادثة. انتظر دقيقة قبل إرسال رسالة أخرى.",
+        "The AI assistant could not generate a reply.": "تعذر على المساعد إنشاء رد.",
         "Login - FixNow": "تسجيل الدخول - FixNow",
         "Register - FixNow": "إنشاء حساب - FixNow",
         "Customer Dashboard - FixNow": "لوحة العميل - FixNow",
@@ -587,6 +603,98 @@
         }
     }
 
+    function setupAiAssistant() {
+        var form = document.getElementById("assistant-form");
+        var input = document.getElementById("assistant-input");
+        var messages = document.getElementById("assistant-messages");
+        var panel = document.getElementById("assistant-panel");
+        var launcher = document.getElementById("assistant-launcher");
+        var closeButton = document.getElementById("assistant-close");
+
+        if (!form || !input || !messages || !panel || !launcher || !closeButton) {
+            return;
+        }
+
+        function setOpen(isOpen, returnFocus) {
+            panel.hidden = !isOpen;
+            launcher.setAttribute("aria-expanded", String(isOpen));
+            if (isOpen) {
+                input.focus();
+            } else if (returnFocus) {
+                launcher.focus();
+            }
+        }
+
+        launcher.addEventListener("click", function () {
+            setOpen(panel.hidden, false);
+        });
+        closeButton.addEventListener("click", function () {
+            setOpen(false, true);
+        });
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && !panel.hidden) {
+                setOpen(false, true);
+            }
+        });
+
+        function appendMessage(text, role) {
+            var message = document.createElement("p");
+            message.className = "assistant-message " + (role === "user" ? "assistant-message-user" : "assistant-message-bot");
+            message.textContent = text;
+            messages.appendChild(message);
+            messages.scrollTop = messages.scrollHeight;
+            return message;
+        }
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+            var text = input.value.trim();
+            if (!text) {
+                return;
+            }
+
+            appendMessage(text, "user");
+            input.value = "";
+            var pendingMessage = appendMessage("…", "assistant");
+            var submitButton = form.querySelector("button[type='submit']");
+            submitButton.disabled = true;
+            input.disabled = true;
+
+            try {
+                var response = await fetch(form.action, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text })
+                });
+                var result = await response.json();
+                if (!response.ok) {
+                    var errorMessage = result.error || result.detail || "The AI assistant is temporarily unavailable.";
+                    pendingMessage.textContent = translate(errorMessage, root.getAttribute("data-language"));
+                    pendingMessage.classList.add("assistant-message-error");
+                } else if (typeof result.reply === "string" && result.reply.trim()) {
+                    pendingMessage.textContent = result.reply;
+                } else {
+                    pendingMessage.textContent = translate(
+                        "The AI assistant is temporarily unavailable.",
+                        root.getAttribute("data-language")
+                    );
+                    pendingMessage.classList.add("assistant-message-error");
+                }
+            } catch (error) {
+                pendingMessage.textContent = translate(
+                    "The AI assistant is temporarily unavailable.",
+                    root.getAttribute("data-language")
+                );
+                pendingMessage.classList.add("assistant-message-error");
+            } finally {
+                submitButton.disabled = false;
+                input.disabled = false;
+                input.focus();
+                messages.scrollTop = messages.scrollHeight;
+            }
+        });
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         setupMobileNavigation();
         setupThemeToggle();
@@ -594,5 +702,6 @@
         setupRatingOutput();
         setupPasswordReveal();
         setupRegisterRoleChoice();
+        setupAiAssistant();
     });
 }());

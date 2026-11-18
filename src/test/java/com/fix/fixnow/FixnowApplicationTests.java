@@ -66,6 +66,36 @@ class FixnowApplicationTests {
     }
 
     @Test
+    void customerAssistantIsCustomerOnlyAndReportsMissingGeminiConfiguration() throws Exception {
+        mockMvc.perform(post("/api/customer/assistant/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"What is my request status?\"}"))
+                .andExpect(status().isUnauthorized());
+
+        User technician = createUser("Assistant Technician", "assistant.tech@example.com", Role.TECHNICIAN);
+        mockMvc.perform(post("/api/customer/assistant/chat")
+                        .session(sessionFor(technician))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"What is my request status?\"}"))
+                .andExpect(status().isForbidden());
+
+        User customer = createUser("Assistant Customer", "assistant.customer@example.com", Role.CUSTOMER);
+        mockMvc.perform(get("/customer/dashboard").session(sessionFor(customer)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("FixNow AI assistant")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/api/customer/assistant/chat")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("aria-expanded=\"false\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"assistant-panel\" aria-labelledby=\"assistant-title\" hidden")));
+
+        mockMvc.perform(post("/api/customer/assistant/chat")
+                        .session(sessionFor(customer))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"What is my request status?\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value("The AI assistant is not configured. Set GEMINI_API_KEY on the server."));
+    }
+
+    @Test
     void registerHashesPasswordAndLoginAcceptsRawPassword() {
         User saved = createUser("Secure User", "secure.user@example.com", Role.CUSTOMER);
 

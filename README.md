@@ -181,6 +181,27 @@ The `ServiceRequest` entity follows a managed state machine:
 - **Persistence:** Messages are stored in H2, ensuring persistent history for both parties.
 - **Data Integrity:** Handled via `MessageDTO` to isolate the UI from database entities.
 
+### 🔹 Customer AI Assistant
+- A chat widget on the customer dashboard answers home-repair and FixNow questions.
+- The assistant can explain the signed-in customer's request statuses; only up to 20 recent request IDs and statuses are sent as context.
+- Gemini is called from the backend. The API key is never sent to the browser, and recent chat turns are kept in the signed-in session.
+- The assistant is not a substitute for a qualified technician and will not provide step-by-step guidance for dangerous repair work.
+
+To enable Gemini, create an API key in [Google AI Studio](https://aistudio.google.com/app/apikey) and set it in the server environment before starting the app:
+
+```powershell
+$env:GEMINI_API_KEY = "your-key"
+.\mvnw.cmd spring-boot:run
+```
+
+The default model is `gemini-3.8-flash`; override it with `GEMINI_MODEL` if needed. The assistant allows 10 messages per customer per minute. The dashboard and rest of the app still start without an API key, but assistant replies return a clear configuration error until one is set. Never commit the key or paste it into the frontend.
+
+### 🔹 Persistent Accounts and Data
+- Normal and `dev` runs use the file-backed H2 database at `data/fixnow.mv.db`.
+- Database schema updates are applied without dropping existing tables or accounts when the app stops.
+- The `data/` folder is local and ignored by Git; back it up to preserve your accounts and service data.
+- Automated tests continue to use a separate in-memory database.
+
 ### 🔹 Request Timeline
 Implemented via `RequestTimelineService`, providing a chronological audit trail of every status change for transparency.
 
@@ -255,4 +276,3 @@ src/main/resources/templates
 src/main/resources/static
 ├── css/fixnow-theme.css
 └── js/fixnow-ui.js 
-
