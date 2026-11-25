@@ -13,3 +13,4 @@ spring-boot.err.log
 .project
 .settings/
 HELP-local-backup.md
+src/.env
